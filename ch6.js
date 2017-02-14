@@ -48,4 +48,24 @@ var protoRabbit = {
     }
 };
 
+var killerRabbit = Object.create(protoRabbit);
+killerRabbit.type = "killer";
+killerRabbit.speak("SKREEEE!");     // The killer rabbit says 'SCREEEE!'
+
+
+
+
+// CONSTRUCTORS
+
+function Rabbit(type) {
+    this.type = type;
+}
+
+var killerRabbit = new Rabbit("killer");
+var blackRabbit = new Rabbit("black");
+console.log(blackRabbit.type);    // black
+
+
+
+
 
