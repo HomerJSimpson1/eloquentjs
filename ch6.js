@@ -156,5 +156,70 @@ for (var name in map) {
 
 // PROTOTYPE-LESS OBJECTS
 
+var map = Object.create(null);
+map["pizza"] = 0.0659;
+console.log("toString" in map); // false
+console.log("pizza" in map);    // true
+
+
+
+
+// LAYING OUT A TABLE
+
+function rowHeights(rows) {
+    return rows.map(function(row) {
+	return row.reduce(function(max,cell) {
+	    return Math.max(max, cell.minHeight());
+	}, 0);
+    });
+}
+
+
+function colWidths(rows) {
+    return rows[0].map(function(_, i) {
+	return rows.reduce(function(max, row) {
+	    return Math.max(max, row[i].minWidth());
+	}, 0);
+    });
+}
+
+
+/*
+// Used the following functions to test how colWidths works.
+
+var rows = [];
+
+for (var i = 0; i < 3; i++) {
+    var row = [];
+    for (var j = 0; j < 3; j++) {
+        var repeatNum = ((i * j + 1) % 4) + i;
+        row.push("a".repeat(repeatNum));
+    }
+    rows.push(row);
+}
+
+// rows ends up as the following string array (2D array)
+
+[['a',   'a',     'a'   ], 
+ ['aa',  'aaa',   'aaaa'], 
+ ['aaa', 'aaaaa', 'aaa' ]]
+
+function colWidths(rows) {
+    return rows[0].map(function(_, i) {
+		return rows.reduce(function(max, row) {
+	    	console.log(row[i].length);
+		}, 0);
+    });
+}
+
+console.log(colWidths(rows));
+
+// This yields the following:
+// 1, 2, 3, 1, 3, 5, 1, 4, 3
+
+// This demonstrates that the colWidths function traverses the array in column order.
+// So it reduces each column to the widest element.
+
+*/
 
 
