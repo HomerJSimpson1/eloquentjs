@@ -281,5 +281,236 @@ TextCell.prototype.draw = function(width, height) {
 
 
 var rows = [];
+for (var i = 0; i < 5; i++) {
+    var row = [];
+    for (var j = 0; j < 5; j++) {
+	if ((j + i) % 2 == 0)
+	    row.push(new TextCell("##"));
+	else
+	    row.push(new TextCell("  "));
+    }
+    rows.push(row);
+}
 
-			    
+console.log(drawTable(rows));
+
+// Constructor
+function UnderlinedCell(inner) {
+    this.inner = inner;
+}
+
+UnderlinedCell.prototype.minWidth = function() {
+    return this.inner.minWidth;
+};
+
+UnderlinedCell.prototype.minHeight = function() {
+    return this.inner.minHeight + 1;
+};
+
+UnderlinedCell.prototype.draw = function(width, height) [
+    return this.inner.draw(width, height - 1).concat([repeat("-", width)]);
+};
+
+
+function dataTable(data) {
+    var keys = Object.keys(data[0]);
+    var headers = keys.map(function(name) {
+	return new UnderlinedCell(new TextCell(name));
+    });
+    var body = data.map(function(row) {
+	return keys.map(function(name) {
+	    return new TextCell(String(row[name]));
+	});
+    });
+    return [headers].concat(body);
+}
+
+console.log(drawTable(dataTable(MOUNTAINS)));
+
+
+
+
+// GETTERS AND SETTERS
+
+var pile = {
+    elements: ["eggshell", "orange peel", "worm"],
+    get height() {
+	return this.elements.length();
+    },
+    set height(value) {
+	console.log("Ignoring attempt to set height to ", value);
+    }
+};
+
+console.log(pile.height);  // 3
+pile.height = 100;         // Ignoring attempt to set height to 100
+
+
+Object.defineProperty(TextCell.prototype, "heightProp", {
+    get: function() { return this.text.length; }
+});
+
+var cell = new TextCell("no\nway");
+console.log(cell.heightProp);         // 2
+
+cell.heightProp = 100;
+console.log(cell.heightProp);         // 2
+
+
+// INHERITANCE
+
+function RTextCell(text) {
+    TextCell.call(this, text);
+}
+
+RTextCell.prototype = Object.create(TextCell.prototype);
+RTextCell.prototype.draw = function(width, height) {
+    var result = [];
+    for (var i = 0; i < height; i++) {
+	var line = this.text[i] || "";
+	result.push(repeat(" ", width - line.length) + line);
+    }
+    return result;
+};
+
+
+function dataTable(data) {
+    var keys = Object.keys(data[0]);
+    var headers = keys.map(function(name) {
+	return new UnderlinedCell(new TextCell(name));
+    });
+    var body = data.map(function(row) {
+	return keys.map(function(name) {
+	    var value = row[name];
+	    // The following line was changed
+	    if (typeof value == "number")
+		return new RTextCell(String(value));
+	    else
+		return new TextCell(String(value));
+	});
+    });
+    return [headers].concat(body);
+}
+
+console.log(drawTable(dataTable(MOUNTAINS)));   // ... a beautifully aligned table
+
+
+
+// instanceof() FUNCTION
+
+console.log(new RTextCell("A") instanceof RTextCell);   // true
+console.log(new RTextCell("A") instanceof TextCell);    // true
+console.log(new TextCell("A") instanceof RTextCell);    // false
+console.log([1] instanceof Array);                      // true
+
+
+
+// EXERCISES
+
+// Exercise 1: A Vector Type
+
+/*
+A vector type
+Write a constructor Vector that represents a vector in two-dimensional
+space. It takes x and y parameters (numbers), which it should save to
+properties of the same name.
+Give the Vector prototype two methods, plus and minus, that take another
+vector as a parameter and return a new vector that has the sum
+or difference of the two vectors' (the one in this and the parameter) x
+and y values.
+Add a getter property length to the prototype that computes the length
+of the vector - that is, the distance of the point (x, y) from the origin (0,
+0).
+*/
+
+function Vector(x, y) {
+    this.x = x;
+    this.y = y;
+}
+
+Vector.prototype.plus = function(addend) {
+    return new Vector(this.x + addend.x, this.y + addend.y);
+};
+
+Vector.prototype.minus = function(subtrahend) {
+    return new Vector(this.x - subtrahend.x, this.y - subtrahend.y);
+};
+
+Object.defineProperty(Vector.prototype, "length", {
+    get: function() { return Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2)); }
+});
+
+
+
+// Exercise 2: Another Cell
+
+/*
+Another cell
+Implement a cell type named StretchCell(inner, width, height) that conforms
+to the table cell interface described earlier in the chapter. It should
+wrap another cell (like UnderlinedCell does) and ensure that the resulting
+cell has at least the given width and height, even if the inner cell would
+naturally be smaller.
+
+*/
+
+
+function StretchCell(inner, width, height) {
+    this.inner = inner;
+    this.width = width;
+    this.height = height;
+}
+
+StretchCell.prototype.minWidth = function() {
+    if (this.inner.minWidth() >= this.width) {
+	console.log(this.inner.minWidth());
+	return this.inner.minWidth();
+    }
+    else
+	return this.width;
+};
+
+StretchCell.prototype.minHeight = function() {
+    if (this.inner.minHeight() >= this.height)
+	return this.inner.minHeight();
+    else
+	return this.height;
+};
+
+StretchCell.prototype.draw = function(width, height) {
+    return this.inner.draw(width, height);
+};
+
+
+
+
+
+
+
+
+// Exercise 3: Sequence Interface
+
+
+/*
+Sequence interface
+Design an interface that abstracts iteration over a collection of values.
+An object that provides this interface represents a sequence, and the
+interface must somehow make it possible for code that uses such an
+object to iterate over the sequence, looking at the element values it is
+made up of and having some way to find out when the end of the sequence
+is reached.
+When you have specified your interface, try to write a function logFive
+that takes a sequence object and calls console.log on its first five elements -
+or fewer, if the sequence has fewer than five elements.
+Then implement an object type ArraySeq that wraps an array and allows
+iteration over the array using the interface you designed. Implement
+another object type RangeSeq that iterates over a range of integers (taking
+from and to arguments to its constructor) instead.
+
+*/
+
+
+
+
+
+
