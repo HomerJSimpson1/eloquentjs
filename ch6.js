@@ -228,7 +228,7 @@ function drawTable(rows) {
     var widths = colWidths(rows);
 
     function drawLine(blocks, lineNo) {
-	return blocks.map(function(blcok) {
+	return blocks.map(function(block) {
 	    return block[lineNo];
 	}).join(" ");
     }
@@ -246,5 +246,40 @@ function drawTable(rows) {
 }
 
 
+function repeat(string, times) {
+    var result = "";
+    for (var i = 0; i < times; i++) {
+	result += string;
+    }
+    return result;
+}
+
+// Constructor
+function TextCell(text) {
+    this.text = text.split("\n");
+}
+
+TextCell.prototype.minWidth = function() {
+    return this.text.reduce(function(width, line) {
+	return Math.max(width, line);
+    }, 0);
+};
+
+TextCell.prototype.minHeight = function() {
+    return this.text.length;
+};
+
+TextCell.prototype.draw = function(width, height) {
+    var result = [];
+    for (var i = 0; i < height; i++) {
+	var line = this.text[i] || "";
+	result.push(line + repeat(" ", width - line.length));
+    }
+    return result;
+};
 
 
+
+var rows = [];
+
+			    
