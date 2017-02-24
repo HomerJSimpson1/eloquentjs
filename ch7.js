@@ -159,7 +159,7 @@ function World(map, legend) {
 
 
 function charFromElement(element) {
-    if (element = null)
+    if (element == null)
 	return " ";
     else
 	return element.originChar;
@@ -172,6 +172,7 @@ World.prototype.toString = function() {
 	    var element = this.grid.get(new Vector(x,y));
 	    output += charFromElement(element);
 	}
+	output += "\n";
     }
     return output;
 };
@@ -184,6 +185,158 @@ var world = new World(plan, {"#": Wall, "o": BouncingCritter});
 console.log(world.toString());
 
 
+/*
+// this and its prototype:
+
+The World constructor contains a call to forEach. One interesting thing
+to note is that inside the function passed to forEach, we are no longer
+directly in the function scope of the constructor. Each function call gets
+its own this binding, so the this in the inner function does not refer to
+the newly constructed object that the outer this refers to. In fact, when
+a function isn't called as a method, this will refer to the global object.
+This means that we can't write this.grid to access the grid from inside
+the loop. Instead, the outer function creates a normal local variable,
+grid, through which the inner function gets access to the grid.
+
+This is a bit of a design blunder in JavaScript. Fortunately, the next
+version of the language provides a solution for this problem. Meanwhile,
+there are workarounds. A common pattern is to say var self = this and
+from then on refer to self, which is a normal variable and thus visible to
+inner functions.
+
+Another solution is to use the bind method, which allows us to provide
+an explicit this object to bind to.
+
+
+var test = {
+    prop: 10,
+    addPropTo: function(array) {
+	return array.map(function(elt) {
+	    return this.prop + elt;
+	}.bind(this));
+    }
+};
+console.log(test.addPropTo([5]));   // [15]
+
+
+The function passed to map is the result of the bind call and thus has its
+this bound to the first argument given to bind-the outer function's this
+value (which holds the test object).
+
+Most standard higher-order methods on arrays, such as forEach and map,
+take an optional second argument that can also be used to provide a this
+for the calls to the iteration function. So you could express the previous
+example in a slightly simpler way.
+
+
+var test = {
+    prop: 10,
+    addPropTo: function(array) {
+	return array.map(function(elt) {
+	    return this.prop + elt;
+	}, this);  // no bind statement here
+    }
+};
+
+This works only for higher-order functions that support such a context
+parameter. When they don't, you'll need to use one of the other approaches.
+In our own higher-order functions, we can support such a context parameter
+by using the call method to call the function given as an argument.
+
+For example, here is a forEach method for our Grid type, which calls
+a given function for each element in the grid that isn't null or undefined:
+
+
+Grid.prototype.forEach = function(f, context) {
+    for (var y = 0; y < this.height; y++) {
+	for (var x = 0; x < this.width; x++) {
+	    var value = this.space[x + y * this.width];
+	    if (value != null)
+		f.call(context, value, new Vector(x,y));
+	}
+    }
+};
+
+*/
+
+Grid.prototype.forEach = function(f, context) {
+    for (var y = 0; y < this.height; y++) {
+	for (var x = 0; x < this.width; x++) {
+	    var value = this.space[x + y * this.width];
+	    if (value != null)
+		f.call(context, value, new Vector(x,y));
+	}
+    }
+};
+
+
+World.prototype.turn = function() {
+    var acted = [];
+    this.grid.forEach(function(critter, vector) {
+	if (critter.act && acted.indexOf(critter) == -1) {
+	    acted.push(critter);
+	    this.letAct(critter, vector);
+	}
+    }, this);
+};
+
+
+World.prototype.letAct = function(critter, vector) {
+    var action = critter.act(new View(this, vector));
+    if (action && action.type == "move") {
+	var dest = this.checkDestination(action, vector);
+	if (dest && this.grid.get(dest) == null) {
+	    this.grid.set(vector, null);
+	    this.grid.set(dest, critter);
+	}
+    }
+};
+
+
+World.prototype.checkDestination = function(action, vector) {
+    if (directions.hasOwnProperty(action.direction)) {
+	var dest = vector.plus(directions[action.direction]);
+	if (this.grid.isInside(dest))
+	    return dest;
+    }
+};
+
+
+function View(world, vector) {
+    this.world = world;
+    this.vector = vector;
+}
+
+
+View.prototype.look = function(dir) {
+    var target = this.vector.plus(directions[dir]);
+    if (this.world.grid.isInside(target))
+	return charFromElement(this.world.grid.get(target));
+    else
+	return "#";
+};
+
+View.prototype.findAll = function(ch) {
+    var found = [];
+    for (var dir in directions) {
+	if (this.look(dir) == ch)
+	    found.push(dir);
+    }
+    return found;
+}
+
+View.prototype.find = function(ch) {
+    var found = this.findAll(ch);
+    if (found.length == 0)
+	return null;
+    return randomElement(found);
+};
+
+
+for (var i = 0; i < 5; i++) {
+    world.turn();
+    console.log(world.toString());
+}
 
 
 
