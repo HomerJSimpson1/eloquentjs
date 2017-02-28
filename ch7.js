@@ -273,6 +273,8 @@ Grid.prototype.forEach = function(f, context) {
 World.prototype.turn = function() {
     var acted = [];
     this.grid.forEach(function(critter, vector) {
+	// console.log("critter: " + critter);
+	// console.log("vector: " + vector);
 	if (critter.act && acted.indexOf(critter) == -1) {
 	    acted.push(critter);
 	    this.letAct(critter, vector);
@@ -388,7 +390,11 @@ LifelikeWorld.prototype.letAct = function(critter, vector) {
     var action = critter.act(new View(this, vector));
     var handled = action && action.type in actionTypes &&
 	actionTypes[action.type].call(this, critter, vector, action);
-
+    
+    // Next if statement for debugging only
+    if (critter instanceof PlantEater)
+	console.log("Plant eater taking action " + action.type);
+    
     if (!handled) {
 	// If the action didn't work, then wait.
 	// While waiting, decrease the critter's energy level
@@ -506,7 +512,7 @@ var valley = new LifelikeWorld(
     {"#": Wall,
      "o": PlantEater,
      "*": Plant}
-};
+);
 
 
 
