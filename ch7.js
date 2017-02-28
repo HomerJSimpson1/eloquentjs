@@ -390,10 +390,12 @@ LifelikeWorld.prototype.letAct = function(critter, vector) {
     var action = critter.act(new View(this, vector));
     var handled = action && action.type in actionTypes &&
 	actionTypes[action.type].call(this, critter, vector, action);
-    
+
+    /*
     // Next if statement for debugging only
     if (critter instanceof PlantEater)
 	console.log("Plant eater taking action " + action.type);
+    */
     
     if (!handled) {
 	// If the action didn't work, then wait.
