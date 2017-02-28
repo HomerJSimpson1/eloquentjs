@@ -344,6 +344,173 @@ for (var i = 0; i < 5; i++) {
 
 // MORE LIFE FORMS
 
+function dirPlus(dir, n) {
+    var index = directionNames.indexOf(dir);
+    return directionNames[(index + n + 8) % 8];
+}
+
+
+function WallFollower() {
+    this.dir = "s";
+}
+
+
+WallFollower.prototype.act = function(view) {
+    var start = this.dir;
+    if (view.look(dirPlus(this.dir, -3)) != " ") {
+	// scan to the left only if you've just passed an obstacle.
+	start = this.dir = dirPlus(this.dir, -2);
+    }
+    while (view.look(this.dir) != " ") {
+	this.dir = dirPlus(this.dir, 1);
+	// Prevent infinite loop. If we've looked in every direction
+	// and there are no empty spaces, then stop.
+	if (this.dir == start)
+	    break;
+    }
+    return {type: "move", direction: this.dir };
+};
+
+
+// Use inheritance - inherit from World object
+// Create Constructor for LifelikeWorld
+function LifelikeWorld(map, legend) {
+    // call the super's constructor
+    World.call(this, map, legend);
+}
+
+LifelikeWorld.prototype = Object.create(World.prototype);
+
+var actionTypes = Object.create(null);
+
+// Override the World letAct function
+LifelikeWorld.prototype.letAct = function(critter, vector) {
+    var action = critter.act(new View(this, vector));
+    var handled = action && action.type in actionTypes &&
+	actionTypes[action.type].call(this, critter, vector, action);
+
+    if (!handled) {
+	// If the action didn't work, then wait.
+	// While waiting, decrease the critter's energy level
+	critter.energy -= 0.2;
+	if (critter.energy <= 0) {
+	    // if the critter runs out of energy, it dies
+	    this.grid.set(vector, null);
+	}
+    }
+};
+
+
+
+actionTypes.grow = function(critter) {
+    critter.energy += 0.5;
+    return true;
+};
+
+
+actionTypes.move = function(critter, vector, action) {
+    var dest = this.checkDestination(action, vector);
+    if (dest == null || critter.energy <=1 || this.grid.get(dest) != null)
+	return false;
+    critter.energy -= 1;
+    this.grid.set(vector, null);
+    this.grid.set(dest, critter);
+    return true;
+};
+
+
+actionTypes.eat = function(critter, vector, action) {
+    var dest = this.checkDestination(action, vector);
+    var atDest = dest != null && this.grid.get(dest);
+    if (!atDest || atDest.energy == null)
+	return false;
+    critter.energy += atDest.energy;
+    this.grid.set(dest, null);
+    return true;
+};
+
+
+
+actionTypes.reproduce = function(critter, vector, action) {
+    var baby = elementFromChar(this.legend, critter.originChar);
+    var dest = this.checkDestination(action, vector);
+
+    if (dest == null || critter.energy <= 2 * baby.energy || this.grid.get(dest) != null) {
+	return false;
+    }
+
+    critter.energy -= 2 * baby.energy;
+    this.grid.set(dest, baby);
+
+    return true;
+};
+
+
+
+// POPULATING THE NEW WORLD
+
+// Plants are represented by an asterisk ("*")
+// PlantEaters are represented by an "o"
+// Walls are represented by a pound symbol (aka hashtag) ("#")
+
+// Plant constructor
+function Plant() {
+    this.energy = 3 + Math.random() * 4;
+}
+
+
+Plant.prototype.act = function(view) {
+    if (this.energy > 15) {
+	var space = view.find(" ");
+	if (space)
+	    return {type: "reproduce", direction: space};
+    }
+    if (this.energy < 20)
+	return {type: "grow"};
+};
+
+
+
+function PlantEater() {
+    this.energy = 20;
+}
+
+
+PlantEater.prototype.act = function(view) {
+    var space = view.find(" ");
+    if (this.energy > 60 && space)
+	return {type: "reproduce", direction: space};
+    var plant = view.find("*");
+    if (plant)
+	return {type: "eat", direction: plant};
+    if (space)
+	return {type: "reproduce", direction: space};
+};
+
+
+// BRINGING IT TO LIFE
+
+var valley = new LifelikeWorld(
+    ["############################",
+     "#####                 ######",
+     "##   ***                **##",
+     "#   *##**         **  o  *##",
+     "#    ***      o   ##**    *#",
+     "#       o         ##***    #",
+     "#                 ##**     #",
+     "#   o        #*            #",
+     "#*           #**      o    #",
+     "#***         ##**    o   **#",
+     "##****      ###***      *###",
+     "############################"],
+    {"#": Wall,
+     "o": PlantEater,
+     "*": Plant}
+};
+
+
+
+
 
 
 
