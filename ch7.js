@@ -416,11 +416,24 @@ actionTypes.grow = function(critter) {
 };
 
 
+/*
 actionTypes.move = function(critter, vector, action) {
     var dest = this.checkDestination(action, vector);
     if (dest == null || critter.energy <=1 || this.grid.get(dest) != null)
 	return false;
     critter.energy -= 1;
+    this.grid.set(vector, null);
+    this.grid.set(dest, critter);
+    return true;
+};
+*/
+
+
+actionTypes.move = function(critter, vector, action) {
+    var dest = this.checkDestination(action, vector);
+    if (dest == null || critter.energy <=1 || this.grid.get(dest) != null)
+	return false;
+    critter.energy -= 0.5;
     this.grid.set(vector, null);
     this.grid.set(dest, critter);
     return true;
@@ -517,8 +530,193 @@ var valley = new LifelikeWorld(
 );
 
 
+// Run the simulation:
+
+/*
+var num_iterations = 50;
+for (var i = 0; i < num_iterations; i++) {
+    valley.turn();
+    //console.log(valley.toString());
+    // Print fewer iterations...
+    if ((i % 10) == 0)
+	console.log(valley.toString());    
+}
+*/
+
+var numIterations = 1000;
+//var numToPrint = num_iterations / 10;
+var numToPrint = 10;
+var numModulo = numIterations / numToPrint;
+for (var i = 0; i < numIterations; i++) {
+    valley.turn();
+    // Print fewer iterations...
+    if ((i % numModulo) == 0)
+	console.log(valley.toString());    
+}
 
 
 
 
+// EXERCISES
 
+// Exercise 7.1: Artificial Stupidity
+/*
+Artificial stupidity
+
+Having the inhabitants of our world go extinct after a few minutes is
+kind of depressing. To deal with this, we could try to create a smarter
+plant eater.
+
+There are several obvious problems with our herbivores. First, they
+are terribly greedy, stuffing themselves with every plant they see until
+they have wiped out the local plant life. Second, their randomized movement
+(recall that the view.find method returns a random direction when
+multiple directions match) causes them to stumble around ineffectively
+and starve if there don't happen to be any plants nearby. And finally,
+they breed very fast, which makes the cycles between abundance and
+famine quite intense.
+
+Write a new critter type that tries to address one or more of these
+points and substitute it for the old PlantEater type in the valley world.
+See how it fares. Tweak it some more if necessary.
+
+*/
+
+
+var numPE = 0;
+function PlantEater2() {
+    this.energy = 20;
+    this.numOffspring = 0;
+    numPE++;
+}
+
+// var maxOffspring = 5;
+var maxOffspring = 250;
+
+PlantEater2.prototype.act = function(view) {
+    var space = view.find(" ");
+    if (this.energy > 60 && space && this.numOffspring++ < maxOffspring) {
+	//this.numOffspring++;
+	if (this.numOffspring > 0.5 * maxOffspring)
+	    console.log(this.numOffspring);
+	return {type: "reproduce", direction: space};
+    }
+    var plant = view.find("*");
+    //    if (plant && this.energy < 120)
+    if (plant){
+	if (this.energy < 120)
+	    return {type: "eat", direction: plant};
+	else
+	    this.energy -= 0.5;
+    } // end if (plant)
+    if (space && this.numOffspring++ < maxOffspring)
+	return {type: "reproduce", direction: space};
+};
+
+
+var valley2 = new LifelikeWorld(
+    ["############################",
+     "#####                 ######",
+     "##   ***                **##",
+     "#   *##**         **  o  *##",
+     "#    ***      o   ##**    *#",
+     "#       o         ##***    #",
+     "#                 ##**     #",
+     "#   o        #*            #",
+     "#*           #**      o    #",
+     "#***         ##**    o   **#",
+     "##****      ###***      *###",
+     "############################"],
+    {"#": Wall,
+     "o": PlantEater2,
+     "*": Plant}
+);
+
+
+var numIterations = 1000;
+var numToPrint = 10;
+var numModulo = numIterations / numToPrint;
+for (var i = 0; i < numIterations; i++) {
+    valley2.turn();
+    // Print fewer iterations...
+    if ((i % numModulo) == 0)
+	console.log(valley2.toString());    
+}
+
+
+
+
+// Exercise 7.2: Predators
+
+/*
+
+Predators
+
+Any serious ecosystem has a food chain longer than a single link. Write
+another critter that survives by eating the herbivore critter. You'll notice
+that stability is even harder to achieve now that there are cycles
+at multiple levels. Try to find a strategy to make the ecosystem run
+smoothly for at least a little while.
+
+One thing that will help is to make the world bigger. This way, local
+population booms or busts are less likely to wipe out a species entirely,
+and there is space for the relatively large prey population needed to
+sustain a small predator population.
+
+*/
+
+
+// This solution below really sucks.  Look at the book's solution - it's nice.
+
+function Predator() {
+    this.energy = 100;
+}
+
+
+Predator.prototype.act = function(view) {
+    var space = view.find(" ");
+    if (this.energy > 100 & space) {
+	return { type: "reproduce", direction: space };
+    }
+    var plant = view.find("*");
+    if (plant) {
+	if (this.energy < 20)
+  	    return { type: "eat", direction: plant};
+	else
+	    return { type: "move", direction: plant};
+    }
+	
+    var herbivore = view.find("O");
+    if (herbivore) {
+	if (this.energy < 300)
+	    return { type: "eat", direction: herbivore };
+	else
+	    this.energy -= 1;
+    }
+    if (space) {
+	if (this.energy < 80)
+	    return {type: "move", direction: space};
+    }
+}
+
+
+
+
+var animateWorld = new LifelikeWorld(
+    ["############################",
+     "#####    @            ######",
+     "##   ***                **##",
+     "#   *##**  O**    **  O  *##",
+     "#    ***      O   ##**    *#",
+     "#@      O         ##***    #",
+     "#                 ##**     #",
+     "#   O        #*            #",
+     "#*           #**      O    #",
+     "#***    @    ##**    O   **#",
+     "##****      ###***      *###",
+     "############################"],
+    {"#": Wall,
+     "O": PlantEater2,
+     "*": Plant,
+     "@": Tiger}
+);
